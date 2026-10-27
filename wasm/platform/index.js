@@ -1105,11 +1105,12 @@ function autoWolDialog(host, onSuccess, onCancel) {
   };
 
   var cleanup = function() {
-    stopPollingTasks();
+    console.log('%c[index.js, autoWolDialog]', 'color: green;', 'Closing app dialog and returning.');
     autoWolOverlay.style.display = 'none';
     autoWolDialog.close();
     isDialogOpen = false;
     Navigation.pop();
+    stopPollingTasks();
   };
 
   var sendWakeRequest = function() {
