@@ -285,6 +285,7 @@ function handleMessage(msg) {
   console.log('%c[messages.js, handleMessage]', 'color: gray;', 'Message data: ', msg);
   // If it's a recognized event, notify the appropriate function
   if (msg.indexOf('streamTerminated: ') === 0) {
+    if (window.Platynite) window.Platynite.ended();
     // Release the audio scheduler of the Web Audio backend, which is a no-op for the EMSS backend
     stopAudioScheduler();
     // Remove the on-screen overlays
@@ -345,6 +346,7 @@ function handleMessage(msg) {
       });
     });
   } else if (msg === 'Connection Established') {
+    if (window.Platynite) window.Platynite.connected();
     // Prepare the screen for video stream
     $('#loadingSpinner').css('display', 'none');
     $('body').css('backgroundColor', 'transparent');

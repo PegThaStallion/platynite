@@ -5,13 +5,14 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="-1">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="Moonlight Game Streaming">Moonlight Game Streaming</title>
+  <title>Platynite</title>
   <link rel="icon" href="static/favicon/favicon.png">
   <link rel="stylesheet" href="static/css/roboto.css">
   <link rel="stylesheet" href="static/css/material-icons.css">
   <link rel="stylesheet" href="static/css/material.min.css">
   <link rel="stylesheet" href="static/css/style.css">
   <script type="text/javascript" src="platform.js"></script>
+  <link rel="stylesheet" href="platform/platynite.css">
 </head>
 <body data-name="moonlight-tizen" data-tools="emscripten" data-configs="Debug Release" data-path="{tc}/{config}">
   <div class="mdl-layout mdl-js-layout">
@@ -826,5 +827,6 @@
     <!-- This button exists to suppress the snackbar warning, we're really using a toast -->
   </div>
   <video id="wasm_module" autoplay tabindex="-1"></video>
+  <script src="platform/platynite.js"></script>
 </body>
 </html>

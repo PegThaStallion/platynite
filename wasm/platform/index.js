@@ -51,8 +51,8 @@ var repeatTimeout = null; // Flag indicating whether the repeat timeout is set, 
 var navigationTimeout = null; // Flag indicating whether the navigation timeout is set, initial value is null
 const BUILD_TYPE = '__BUILD_TYPE__'; // Placeholder for build type, which should be replaced during the build process
 const BUILD_COMMIT = '__BUILD_COMMIT__'; // Placeholder for build commit, which should be replaced during the build process
-const REPO_OWNER = '__REPO_OWNER__'; // Placeholder for repository owner, which should be replaced during the build process
-const REPO_NAME = '__REPO_NAME__'; // Placeholder for repository name, which should be replaced during the build process
+const REPO_OWNER = 'PegThaStallion'; // Placeholder for repository owner, which should be replaced during the build process
+const REPO_NAME = 'platynite'; // Placeholder for repository name, which should be replaced during the build process
 var _smartHubLocalMessagePort = null; // Local message port for receiving messages from the Smart Hub service
 var _smartHubMessagePortListener = null; // Listener ID for the Smart Hub local message port
 var _previewApps = {}; // Per-host app cache for Smart Hub Preview: {serverUid: {hostname, address, apps: [{id, title, imageUri}]}}
@@ -1849,8 +1849,8 @@ function navigationGuideDialog() {
 // Fetch the latest version and release notes from GitHub API
 function fetchLatestRelease() {
   // Check if the REPO_OWNER and REPO_NAME are set to placeholders and apply fallback values
-  const repoOwner = (REPO_OWNER === '__REPO_OWNER__') ? 'brightcraft' : REPO_OWNER;
-  const repoName = (REPO_NAME === '__REPO_NAME__') ? 'moonlight-tizen' : REPO_NAME;
+  const repoOwner = (REPO_OWNER === 'PegThaStallion') ? 'brightcraft' : REPO_OWNER;
+  const repoName = (REPO_NAME === 'platynite') ? 'moonlight-tizen' : REPO_NAME;
 
   // GitHub API endpoint to get the latest released version
   const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/releases/latest`;
@@ -2636,16 +2636,16 @@ function showApps(host) {
                 if (resolvedPromise.startsWith('file://')) {
                   var localPngPath = resolvedPromise.replace('file://', '');
                   appEntry.txtPath = localPngPath;
-                  appEntry.imageUri = 'http://' + tvIp + ':8888/' + filename + cacheBuster;
+                  appEntry.imageUri = 'http://' + tvIp + ':8889/' + filename + cacheBuster;
                   resolveBoxArt();
                 } else {
                   try {
                     var documentsPath = tizen.filesystem.toURI('documents').replace('file://', '');
                     appEntry.txtPath = documentsPath + '/' + filename;
-                    appEntry.imageUri = 'http://' + tvIp + ':8888/' + filename + cacheBuster;
+                    appEntry.imageUri = 'http://' + tvIp + ':8889/' + filename + cacheBuster;
                   } catch(err) {
                     appEntry.txtPath = '/opt/usr/home/owner/content/Documents/' + filename;
-                    appEntry.imageUri = 'http://' + tvIp + ':8888/' + filename + cacheBuster;
+                    appEntry.imageUri = 'http://' + tvIp + ':8889/' + filename + cacheBuster;
                   }
                   resolveBoxArt();
                 }
@@ -3099,8 +3099,8 @@ function sendEscapeKeyToHost() {
 let indexedDB = null;
 const dbVersion = 1.0;
 let db = null;
-const dbName = 'GameStreamingDB';
-const storeName = 'GameStreamingStore';
+const dbName = 'PlatyniteStreamingDB';
+const storeName = 'PlatyniteStreamingStore';
 
 // Based on example from https://hacks.mozilla.org/2012/02/storing-images-and-files-in-indexeddb/
 function createObjectStore(dataBase) {

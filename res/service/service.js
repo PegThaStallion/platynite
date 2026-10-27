@@ -14,7 +14,7 @@
 /* global tizen, webapis, module */
 
 var packageId = tizen.application.getCurrentApplication().appInfo.packageId;
-var applicationId = packageId + '.MoonlightWasm';
+var applicationId = packageId + '.Platynite';
 var remoteMessagePort;
 
 var fs = null;
@@ -84,7 +84,7 @@ function startLocalServer() {
     return;
   }
   if (localServer) {
-    logAndSend('Local HTTP server is already running on http://' + tvIp + ':8888');
+    logAndSend('Local HTTP server is already running on http://' + tvIp + ':8889');
     return;
   }
   
@@ -146,8 +146,8 @@ function startLocalServer() {
     logAndSend('Local HTTP server error: ' + err.message);
   });
   
-  localServer.listen(8888, '0.0.0.0', function() {
-    logAndSend('Local HTTP server listening on http://0.0.0.0:8888 (TV IP: ' + tvIp + ')');
+  localServer.listen(8889, '0.0.0.0', function() {
+    logAndSend('Local HTTP server listening on http://0.0.0.0:8889 (TV IP: ' + tvIp + ')');
   });
 }
 

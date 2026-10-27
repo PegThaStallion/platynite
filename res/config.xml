@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="http://samsung.tv/MoonlightWasm" version="1.19.0" viewmodes="fullscreen">
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="http://samsung.tv/Platynite" version="0.1.0" viewmodes="fullscreen">
     <access origin="*"></access>
     <tizen:app-control>
         <tizen:src name="index.html" reload="disable"/>
         <tizen:operation name="http://samsung.com/appcontrol/operation/eden_resume"/>
     </tizen:app-control>
-    <tizen:application id="MoonLightS.MoonlightWasm" package="MoonLightS" required_version="5.5" launch_mode="caller"/>
+    <tizen:application id="PlatyNite1.Platynite" package="PlatyNite1" required_version="5.5" launch_mode="caller"/>
     <content src="index.html"/>
-    <description>Moonlight Game Streaming</description>
+    <description>Playnite library powered by Moonlight</description>
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <icon src="icon.png"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/use.voiceguide" value="false"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/floating.navigation" value="false"/>
     <tizen:metadata key="http://samsung.com/tv/metadata/use.preview" value="bg_service"/>
-    <name>Moonlight</name>
+    <name>Platynite</name>
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:privilege name="http://tizen.org/privilege/network.get"/>
     <tizen:privilege name="http://tizen.org/privilege/fullscreen"/>
@@ -30,9 +30,9 @@
     <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
     <tizen:profile name="tv-samsung"/>
-    <tizen:service id="MoonLightS.service" on-boot="true" auto-restart="true">
+    <tizen:service id="PlatyNite1.service" on-boot="true" auto-restart="true">
         <tizen:content src="service/service.js"/>
-        <tizen:name>moonlight_service</tizen:name>
+        <tizen:name>platynite_service</tizen:name>
         <tizen:description>Moonlight Smart Hub Preview Handler Service</tizen:description>
         <tizen:category name="http://tizen.org/category/service"/>
     </tizen:service>

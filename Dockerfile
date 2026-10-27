@@ -150,7 +150,7 @@ RUN echo \
 
 # Rename the output WGT file by appending a suffix for the ForceGM variant, or leave without a suffix for the Standard variant
 RUN if [ "$FORCE_GAME_MODE" = "true" ]; then SUFFIX="-ForceGM"; else SUFFIX=""; fi; \
-	mv build/widget/Moonlight.wgt "Moonlight${SUFFIX}.wgt" && ls -la *.wgt
+	mv build/widget/Platynite.wgt "Platynite${SUFFIX}.wgt" && ls -la *.wgt
 
 # Clean up unnecessary files to reduce image size
 RUN rm -rf \

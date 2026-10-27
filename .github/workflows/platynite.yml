@@ -1,0 +1,52 @@
+name: Platynite build
+on:
+  workflow_dispatch:
+  push:
+    branches: [platynite]
+permissions:
+  contents: read
+jobs:
+  widget:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/frontend.test.cjs
+      - name: Compile Moonlight engine with Samsung SDK
+        run: |
+          docker build -t platynite-build --build-arg REPO_OWNER=PegThaStallion --build-arg REPO_NAME=platynite .
+          docker create --name widget platynite-build
+          mkdir -p build
+          docker cp widget:/home/moonlight/Platynite.wgt build/engine.wgt
+          docker rm widget
+      - name: Assemble unsigned distributable
+        run: python3 tools/build-widget.py --engine build/engine.wgt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Platynite-unsigned
+          path: build/Platynite-unsigned.wgt
+  companion:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch official Playnite SDK runtime
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $release = gh api repos/JosefNemec/Playnite/releases/latest | ConvertFrom-Json
+          $asset = $release.assets | Where-Object name -Match '\.7z$' | Select-Object -First 1
+          if (!$asset) { throw 'Playnite portable asset not found' }
+          Invoke-WebRequest $asset.browser_download_url -OutFile playnite.7z
+          7z x playnite.7z -oplaynite-runtime
+          $sdk = Get-ChildItem playnite-runtime -Filter Playnite.SDK.dll -Recurse | Select-Object -First 1
+          ./tools/build-companion.ps1 -PlaynitePath $sdk.DirectoryName
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PlatyniteCompanion
+          path: build/PlatyniteCompanion.pext
