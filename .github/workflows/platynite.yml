@@ -6,6 +6,18 @@ on:
 permissions:
   contents: read
 jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - run: npm run test:browser
   widget:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
@@ -46,6 +58,7 @@ jobs:
           7z x playnite.7z -oplaynite-runtime
           $sdk = Get-ChildItem playnite-runtime -Filter Playnite.SDK.dll -Recurse | Select-Object -First 1
           ./tools/build-companion.ps1 -PlaynitePath $sdk.DirectoryName
+          ./tools/test-companion.ps1 -PlaynitePath $sdk.DirectoryName
       - uses: actions/upload-artifact@v4
         with:
           name: PlatyniteCompanion

@@ -1,6 +1,12 @@
 user-data-dir/
 pnacl/
 build/
+node_modules/
+*.pext
+*.wgt
+*.p12
+*.pfx
+connection.json
 
 # Object files
 *.o

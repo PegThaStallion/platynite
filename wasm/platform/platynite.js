@@ -4,7 +4,7 @@
   var settingsKey = 'platynite.connection.v1', cacheKey = 'platynite.catalog.v1';
   var settings = read(settingsKey, { address: '', token: '', sunshine: '' });
   var catalog = read(cacheKey, { games: [] }), selected = null, visible = [], online = false;
-  var root, pending = null, busy = false, stopped = false, refreshTimer, imageObserver;
+  var root, pending = null, busy = false, stopped = false, refreshTimer, imageObserver, connectionTimer;
   var imageDb, imageRequests = {}, imageQueue = [], activeImages = 0;
   var preferences = read('platynite.view.v1', { installed: false, favorite: false, hidden: false, sort: 'name', list: false });
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (_) { return fallback; } }
@@ -167,6 +167,7 @@
     return url.origin;
   }
   function show() {
+    clearTimeout(connectionTimer);
     root.hidden = false; busy = false; pending = null; stopped = false;
     if (typeof Navigation !== 'undefined') Navigation.stop();
     select(selected); var card = el('pn-grid').querySelector('[aria-selected=true]'); if (card) card.focus(); else el('pn-connect').focus();
@@ -179,6 +180,7 @@
   }
   function connect(resumeOnly) {
     if (busy) return;
+    if (!settings.address || !settings.token) { setup(); return; }
     if (!resumeOnly && (!selected || !selected.installed || !online)) return;
     if (typeof Module === 'undefined' || typeof Module.startStream !== 'function' || !pairingCert) { status('Streaming engine is still starting. Try again in a moment.'); return; }
     busy = true; select(selected);
@@ -196,6 +198,9 @@
           return host.refreshServerInfo().then(function() {
             if (host.currentGame && String(host.currentGame) !== String(desktop.id)) throw new Error('Sunshine is streaming another application. End that session before connecting Platynite.');
             hide(); startGame(host, desktop.id);
+            connectionTimer = setTimeout(function() {
+              if (busy) { pending = null; Module.stopStream(); failed(new Error('Stream connection timed out. Your game was not launched.')); }
+            }, 60000);
           });
         }).catch(failed);
       }
@@ -207,6 +212,7 @@
   }
   function failed(error) { show(); status(error.message || 'Could not connect.'); }
   function streamConnected() {
+    clearTimeout(connectionTimer);
     busy = false; var launch = pending; pending = null;
     if (!launch) return;
     request('/api/launch', launch).then(function(result) {
@@ -299,7 +305,7 @@
       return true;
     });
   }
-  window.Platynite = { show:show, hide:hide, connected:streamConnected, ended:function() { pending=null; busy=false; stopped=true; setTimeout(function() { if (stopped) { show(); refresh(true); } },700); },
+  window.Platynite = { show:show, hide:hide, connected:streamConnected, ended:function() { clearTimeout(connectionTimer); pending=null; busy=false; stopped=true; setTimeout(function() { if (stopped) { show(); refresh(true); } },700); },
     isVisible:function() { return root && !root.hidden; }, configure:function(value) { settings=value; save(settingsKey,value); el('pn-setup').hidden=true; return refresh(false); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();

@@ -60,6 +60,14 @@ namespace Platynite {
                     }
                 }
                 if (header.Count >= 16384 || headers.ContainsKey("Transfer-Encoding")) { Reply(stream, 400, new { error = "Unsupported request" }); return; }
+                string lengthHeader; int bodyLength = 0;
+                if (headers.TryGetValue("Content-Length", out lengthHeader) && (!int.TryParse(lengthHeader, out bodyLength) || bodyLength < 0 || bodyLength > 4096)) {
+                    Reply(stream, 400, new { error = "Invalid body size" }); return;
+                }
+                // Drain a bounded body before replying, including rejected/unknown routes.
+                // Closing a TCP socket with unread request data can reset the response on Windows.
+                var body = new byte[bodyLength]; int bodyOffset = 0;
+                while (bodyOffset < bodyLength) { int count = stream.Read(body, bodyOffset, bodyLength-bodyOffset); if (count == 0) throw new IOException(); bodyOffset += count; }
                 if (first[0] == "OPTIONS") { Reply(stream, 204, null); return; }
                 string authorization;
                 if (!headers.TryGetValue("Authorization", out authorization) || !Equal(authorization, "Bearer " + token)) {
@@ -78,13 +86,10 @@ namespace Platynite {
                     return;
                 }
                 if (first[0] == "POST" && path == "/api/launch") {
-                    string len; int length;
-                    if (!headers.TryGetValue("Content-Length", out len) || !int.TryParse(len, out length) || length < 2 || length > 4096) {
+                    if (bodyLength < 2) {
                         Reply(stream, 400, new { error = "Invalid body size" }); return;
                     }
-                    var bytes = new byte[length]; int offset = 0;
-                    while (offset < length) { int count = stream.Read(bytes, offset, length-offset); if (count == 0) throw new IOException(); offset += count; }
-                    var data = JObject.Parse(Encoding.UTF8.GetString(bytes)); Guid id, requestId;
+                    var data = JObject.Parse(Encoding.UTF8.GetString(body)); Guid id, requestId;
                     if (!Guid.TryParse((string)data["id"], out id) || !Guid.TryParse((string)data["requestId"], out requestId)) {
                         Reply(stream, 400, new { error = "Game id and requestId must be UUIDs" }); return;
                     }
