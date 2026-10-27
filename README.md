@@ -15,7 +15,7 @@ This application allows you to stream your collection of games, programs, or you
 >
 > At this stage, the core functionality is now considered **fully implemented**, and the project has reached a **mature and stable state** as it approaches the end of its active development period. Given this progress, **this will most likely be my final year** of actively maintaining and developing it, and I intend to use this time to complete the work that can still be done before this transition takes place.
 >
-> To help manage my workload during this period, **new issue submissions are now restricted**, although existing issues remain available for reference. For quick questions, troubleshooting help, and community support, please use the project’s Discord server.
+> To help manage my workload during this final period of active maintenance, **new issue and pull request submissions are now restricted**, although existing issues and pull requests remain available for reference. For quick questions, troubleshooting help, and community support, please use the project’s Discord server.
 >
 > As this transition approaches, I will make a **final announcement**, perhaps towards the end of the year, with more details about what this transition will mean for the project and its future.
 
@@ -62,7 +62,7 @@ Although it remained only a proof-of-concept at that stage, the work was later t
 
 In **September 2023**, I started development on a fork repository, where I made significant changes, including a **brand-new app logo** and **extensive improvements** focused on delivering a modern, reliable, and user-friendly experience. When the [upstream repository](https://github.com/KyroFrCode/moonlight-chrome-tizen) became inactive and was eventually abandoned, I migrated all my work to this new dedicated repository as a fresh and **standalone continuation**, offering a cleaner structure, easier maintenance, and greater flexibility for future development.
 
-Since then, [this repository](https://github.com/brightcraft/moonlight-tizen) has been actively maintained with frequent updates. Over time, I have refactored the codebase, updated core libraries, fixed bugs, polished the UI/UX, and introduced many new features and improvements. Thanks to more than two years of dedicated work, this has become the **most enhanced and feature-rich Moonlight client** available for Samsung Tizen TVs.
+Since then, [this repository](https://github.com/brightcraft/moonlight-tizen) has been actively maintained with frequent updates. Over time, I have refactored the codebase, updated core libraries, fixed bugs, polished the UI/UX, and introduced many new features and improvements. Thanks to many years of dedicated work, this has become the **most enhanced and feature-rich Moonlight client** available for Samsung Tizen TVs.
 
 ---
 
