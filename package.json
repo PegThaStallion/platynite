@@ -1,9 +1,9 @@
 {
   "name": "platynite",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/frontend.test.cjs",
+    "test": "node --test tests/*.test.cjs",
     "test:browser": "node tools/browser-test.cjs"
   },
   "devDependencies": { "playwright": "1.62.1" }

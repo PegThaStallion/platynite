@@ -389,6 +389,7 @@ function beginBackgroundPollingOfHost(host) {
 }
 
 function startPollingHosts() {
+  if (window.Platynite && window.Platynite.isVisible()) return Promise.resolve();
   var pollPromises = [];
   for (var hostUID in hosts) {
     pollPromises.push(beginBackgroundPollingOfHost(hosts[hostUID]));
@@ -961,6 +962,7 @@ function addHostDialog() {
 
 // Show the Pairing dialog before pairing with the given NvHTTP host object. Returns whether the pairing was successful or failed.
 function pairingDialog(nvhttpHost, onSuccess, onFailure) {
+  if (isPairingInProgress) return;
   if (typeof window.abortSubnetScan === 'function') window.abortSubnetScan();
   if (!onFailure) {
     onFailure = function() {}
@@ -1005,7 +1007,7 @@ function pairingDialog(nvhttpHost, onSuccess, onFailure) {
       t('Please enter the following PIN on the target PC: %1$s<br><br>', randomNumber) + 
       t('If your host PC is running Sunshine (all GPUs), navigate to the Sunshine Web UI to enter the PIN.<br><br>') + 
       t('Alternatively, if your host PC has NVIDIA GameStream (NVIDIA-only), navigate to the GeForce Experience to enter the PIN.<br><br>') + 
-      t('This dialog will close once the pairing is complete.')
+      t('Keep this TV window open after submitting the PIN on the PC. It will close automatically when pairing is complete.')
     );
 
     // Show the dialog and push the view
@@ -3180,7 +3182,7 @@ function getData(key, callbackFunction) {
 
       // Retrieve the data that was stored
       readRequest.onsuccess = function(e) {
-        console.log('%c[index.js, getData]', 'color: green;', 'Reading data from DB key: ' + key + ' with value: ' + readRequest.result);
+        console.log('%c[index.js, getData]', 'color: green;', 'Reading stored setting: ' + key);
         let value = null;
         if (readRequest.result) {
           value = JSON.parse(readRequest.result);
@@ -3214,7 +3216,7 @@ function storeData(key, data, callbackFunction) {
       const put = transaction.objectStore(storeName).put(JSON.stringify(data), key);
 
       transaction.oncomplete = function(e) {
-        console.log('%c[index.js, storeData]', 'color: green;', 'Storing data at key: ' + key + ' with data: ' + JSON.stringify(data));
+        console.log('%c[index.js, storeData]', 'color: green;', 'Stored setting: ' + key);
         if (callbackFunction) {
           callbackFunction();
         }
@@ -3823,8 +3825,8 @@ function savePerformanceStats() {
 
 // Reset all settings to their default state and save the value data
 function restoreDefaultsSettingsValues() {
-  const defaultResolution = '1280:720';
-  $('#selectResolution').text('1280 x 720 (720p)').attr('data-value', defaultResolution).data('value', defaultResolution);
+  const defaultResolution = '1920:1080';
+  $('#selectResolution').text('1920 x 1080 (1080p)').attr('data-value', defaultResolution).data('value', defaultResolution);
   storeData('resolution', defaultResolution, null);
 
   const defaultFramerate = '60';
@@ -4336,7 +4338,7 @@ function loadHTTPCertsCb() {
         sendMessage('makeCert', []).then(function(cert) {
           storeData('cert', cert, null);
           pairingCert = cert;
-          console.info('%c[index.js, loadHTTPCertsCb]', 'color: green;', 'Generated new certificate: ', cert);
+          console.info('%c[index.js, loadHTTPCertsCb]', 'color: green;', 'Generated a new client certificate.');
         }, function(failedCert) {
           console.error('%c[index.js, loadHTTPCertsCb]', 'color: green;', 'Error: Failed to generate a new certificate! Returned error was: \n', failedCert + '!');
         }).then(function(ret) {
@@ -4385,7 +4387,7 @@ function loadHTTPCertsCb() {
         // We wait for all known hosts to finish their initial ping before launching the subnet scanner
         // to guarantee that the 254 scanner requests don't choke the network stack and cause known hosts to timeout.
         startPollingHosts().then(() => {
-          if (typeof startSubnetScanner === 'function') {
+          if (typeof startSubnetScanner === 'function' && !window.Platynite) {
             snackbarLog('Scanning the local network to discover new hosts...');
             // Stop background polling while sweeping the subnet to prevent network exhaustion
             stopPollingHosts();

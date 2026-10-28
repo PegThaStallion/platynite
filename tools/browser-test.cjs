@@ -10,7 +10,8 @@ const script = fs.readFileSync(path.join(root,'wasm/platform/platynite.js'));
 const games = [
   {id:'11111111-1111-4111-8111-111111111111', name:'Alpha Adventure', installed:true, favorite:true, platforms:['PC'], description:'An installed adventure from your Playnite library.',playtime:100,lastActivity:'2026-10-26',artworkVersion:'1'},
   {id:'22222222-2222-4222-8222-222222222222', name:'Beta Worlds', installed:false, platforms:['PC'],description:'Available in your library, not installed on this PC.',playtime:0,artworkVersion:'1'},
-  {id:'33333333-3333-4333-8333-333333333333', name:'Hidden Galaxy', installed:true, hidden:true, platforms:['Other'],description:'Hidden game.',playtime:0,artworkVersion:'1'}
+  {id:'33333333-3333-4333-8333-333333333333', name:'Hidden Galaxy', installed:true, hidden:true, platforms:['Other'],description:'Hidden game.',playtime:0,artworkVersion:'1'},
+  {id:'44444444-4444-4444-8444-444444444444', name:'Cloud Adventure', installed:false,canPlay:true,cloudProvider:'Xbox Cloud',platforms:['Xbox'],description:'A cloud-ready game needs no local game download.',playtime:500,artworkVersion:'1'}
 ];
 const shell = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/platform/platynite.css"></head><body><header id="main-header"><nav></nav></header><script>
 var Navigation={start(){},stop(){}};var Module={startStream(){}};var pairingCert='fixture';var myUniqueid='fixture';var hosts={};var api;var isInGame=false,isPairingInProgress=false;
@@ -37,13 +38,18 @@ const server = http.createServer((req,res) => {
     if(req.method()==='OPTIONS') return route.fulfill({status:204,headers});
     assert.equal(req.headers().authorization,'Bearer fixture-token');
     if(req.url().endsWith('/api/launch')) { launches.push(req.postDataJSON()); return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({status:'launch-requested'})}); }
-    return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({version:1,host:'Playnite PC',games})});
+    return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({version:1,revision:'fixture-v1',host:'Playnite PC',games,addons:[{id:'startpage',name:'StartPage',view:'home'},{id:'gameactivity',name:'GameActivity',view:'activity'}]})});
   });
   try {
     await page.goto('http://127.0.0.1:'+server.address().port);
     await page.evaluate(()=>window.Platynite.configure({address:'http://pc.test',token:'fixture-token',sunshine:'pc.test'}));
-    assert.equal(await page.locator('.pn-card').count(),2,'hidden games excluded by default');
-    await page.locator('#pn-hidden').check(); assert.equal(await page.locator('.pn-card').count(),3);
+    assert.equal(await page.locator('.pn-card').count(),3,'hidden games excluded by default');
+    assert.equal(await page.locator('.pn-addon').count(),2,'only supported installed add-on adapters appear');
+    await page.getByRole('button',{name:'GameActivity',exact:true}).click();assert.equal(await page.locator('#pn-heading').textContent(),'GameActivity');
+    await page.locator('#pn-all').click();
+    await page.locator('#pn-cloud').check();assert.equal(await page.locator('.pn-card').count(),1);assert.equal(await page.locator('#pn-play').isDisabled(),false);assert.match(await page.locator('#pn-play').textContent(),/Xbox Cloud/);
+    await page.locator('#pn-cloud').uncheck();
+    await page.locator('#pn-hidden').check(); assert.equal(await page.locator('.pn-card').count(),4);
     await page.locator('#pn-hidden').uncheck();
     await page.locator('#pn-installed').check(); assert.equal(await page.locator('.pn-card').count(),1);
     await page.locator('#pn-installed').uncheck();
@@ -69,8 +75,11 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.locator('.pn-card').nth(1).evaluate(n=>n===document.activeElement),true,'remote moves between cards');
     await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gamepadinputchanged',{detail:{changes:[{type:'button',index:14,pressed:true}]}})));
     assert.equal(await page.locator('.pn-card').first().evaluate(n=>n===document.activeElement),true,'gamepad D-pad reaches library');
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gamepadinputchanged',{detail:{changes:[{type:'button',index:14,pressed:false},{type:'axis',index:0,value:1}]}})));
+    assert.equal(await page.locator('.pn-card').nth(1).evaluate(n=>n===document.activeElement),true,'left stick navigates library');
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gamepadinputchanged',{detail:{changes:[{type:'axis',index:0,value:0}]}})));
     offline=true; await page.locator('#pn-refresh').click(); await page.waitForTimeout(200);
-    assert.equal(await page.locator('.pn-card').count(),2,'saved library stays visible offline');
+    assert.equal(await page.locator('.pn-card').count(),3,'saved library stays visible offline');
     assert.equal(await page.locator('#pn-play').isDisabled(),true,'offline Play disabled');
     assert.match(await page.locator('#pn-status').textContent(),/saved library/);
     assert.deepEqual(errors,[]);

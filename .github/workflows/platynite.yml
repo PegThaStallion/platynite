@@ -28,8 +28,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/frontend.test.cjs
+      - run: node --test tests/*.test.cjs
+      - name: Restore compiled engine cache
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: build/engine.wgt
+          key: platynite-engine-v119-${{ hashFiles('Dockerfile', 'CMakeLists.txt', 'wasm/*.cpp', 'wasm/*.c', 'wasm/*.hpp', 'wasm/dispatcher/**', 'libgamestream/**', 'moonlight-common-c/**', 'opus/**', 'h264bitstream/**', 'ports/**') }}
       - name: Compile Moonlight engine with Samsung SDK
+        if: steps.engine.outputs.cache-hit != 'true'
         run: |
           docker build -t platynite-build --build-arg REPO_OWNER=PegThaStallion --build-arg REPO_NAME=platynite .
           docker create --name widget platynite-build

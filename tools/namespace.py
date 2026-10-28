@@ -12,7 +12,7 @@ for path in files:
     text = text.replace('__REPO_OWNER__', 'PegThaStallion').replace('__REPO_NAME__', 'platynite')
     text = text.replace('https://github.com/brightcraft/moonlight-tizen/releases', 'https://github.com/PegThaStallion/platynite/releases')
     if path.name == 'config.xml':
-        text = text.replace('version="1.19.0"', 'version="0.1.0"').replace('<name>Moonlight</name>', '<name>Platynite</name>')
+        text = text.replace('version="1.19.0"', 'version="0.2.0"').replace('<name>Moonlight</name>', '<name>Platynite</name>')
         text = text.replace('<description>Moonlight Game Streaming</description>', '<description>Playnite library powered by Moonlight</description>')
     path.write_text(text, encoding='utf-8', newline='\n')
 html = root/'wasm/index.html'

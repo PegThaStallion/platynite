@@ -1,7 +1,7 @@
 :root { --pn-accent:#bc81ff; --pn-muted:#b2b4c4; --pn-line:rgba(255,255,255,.1); }
 #platynite { position:fixed; inset:0; z-index:20; color:#eeedf4; background:#20212a; font:clamp(17px,1.25vw,25px)/1.45 'Trebuchet MS',Arial,sans-serif; display:flex; flex-direction:column; }
 #platynite[hidden], #platynite [hidden] { display:none!important; }
-#pn-backdrop { position:absolute; inset:0; background-position:center; background-size:cover; opacity:.18; filter:blur(28px); pointer-events:none; }
+#pn-backdrop { position:absolute; inset:0; background-position:center; background-size:cover; opacity:.14; filter:blur(12px); pointer-events:none; }
 #platynite button,#platynite input,#platynite select { font:inherit; color:inherit; border:1px solid var(--pn-line); border-radius:6px; background:#33343f; min-height:44px; padding:8px 16px; }
 #platynite button { cursor:pointer; }
 #platynite button:hover { background:#42404f; }
@@ -18,6 +18,9 @@
 .pn-filter input { min-height:0!important; width:20px; height:20px; margin-right:10px; accent-color:var(--pn-accent); }
 #pn-platform { width:100%; margin-bottom:26px; }
 #pn-sidebar .pn-current { color:var(--pn-accent); font-weight:bold; }
+#platynite .pn-addon { display:block; width:100%; text-align:left; margin:8px 0; background:#302b3b; }
+#pn-addons { margin-bottom:24px; }
+#pn-summary { padding:14px 20px; margin-bottom:16px; border:1px solid var(--pn-line); border-radius:6px; color:#d8c6eb; background:#24212fcc; }
 #pn-library { flex:1; min-width:0; display:flex; flex-direction:column; padding:25px 28px 0; }
 #pn-library-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
 #pn-heading { font-size:1.4em; font-weight:bold; }

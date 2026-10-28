@@ -137,8 +137,8 @@ function NvHTTP(address, clientUid, userEnteredAddress = '', macAddress) {
   this.localAddress = '';
   this.externalIP = '';
   this.macAddress = macAddress;
-  this.httpsPort = 0;
-  this.httpPort = 0;
+  this.httpsPort = 47984;
+  this.httpPort = 47989;
   this.externalPort = 0;
   this.clientUid = clientUid;
   this.serverUid = '';
@@ -158,6 +158,7 @@ function NvHTTP(address, clientUid, userEnteredAddress = '', macAddress) {
   this.gputype = '';
   this.supportedDisplayModes = {}; // key: y-resolution:x-resolution, value: array of supported frame rates
   this.autoWolEnabled = false; // Per-host Auto Wake-on-LAN setting
+  Object.defineProperty(this, '_pairPromise', { value:null, writable:true, configurable:true, enumerable:false });
 
   _self = this;
   console.log('%c[utils.js, NvHTTP]', 'color: gray;', 'NvHTTP Object: \n' + this);
@@ -1002,7 +1003,8 @@ NvHTTP.prototype = {
   },
 
   pair: function(randomNumber) {
-    return this.refreshServerInfo().then(function() {
+    if (this._pairPromise) return this._pairPromise;
+    this._pairPromise = this.refreshServerInfo().then(function() {
       if (this.paired && this.ppkstr) {
         return true;
       }
@@ -1017,10 +1019,15 @@ NvHTTP.prototype = {
         }.bind(this)).then(function(ret) {
           $xml = this._parseXML(ret);
           this.paired = $xml.find('paired').html() == '1';
-          return this.paired;
+          if (!this.paired) throw new Error('Sunshine did not finish pairing. Keep the TV dialog open after submitting the PIN.');
+          return this.refreshServerInfo().then(function() {
+            if (!this.paired) throw new Error('Sunshine accepted the PIN but client authentication did not complete.');
+            return true;
+          }.bind(this));
         }.bind(this));
       }.bind(this));
-    }.bind(this));
+    }.bind(this)).finally(function() { this._pairPromise=null; }.bind(this));
+    return this._pairPromise;
   },
 
   sendWOL: function() {

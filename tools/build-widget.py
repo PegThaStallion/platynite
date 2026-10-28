@@ -23,7 +23,7 @@ for name in ('config.xml','platform.js','icon.png'):
     shutil.copy2(root/'res'/name, widget/name)
 shutil.copy2(root/'wasm/index.html', widget/'index.html')
 shutil.copy2(root/'LICENSE', widget/'LICENSE-Moonlight.txt')
-(widget/'BUILD.json').write_text(json.dumps({'name':'Platynite','version':'0.1.0','engine':'Moonlight 1.19.0',
+(widget/'BUILD.json').write_text(json.dumps({'name':'Platynite','version':'0.2.0','engine':'Moonlight 1.19.0',
     'enginePackageSha256':hashlib.sha256(args.engine.read_bytes()).hexdigest()}, indent=2))
 with zipfile.ZipFile(args.output, 'w', zipfile.ZIP_DEFLATED) as package:
     for file in sorted(widget.rglob('*')):

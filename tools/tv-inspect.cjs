@@ -8,9 +8,10 @@ async function main() {
   if(!target) throw new Error('Platynite inspector target not found');
   const ws = new WebSocket(target.webSocketDebuggerUrl); const pending=new Map();let nextId=1;
   await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});
-  ws.onmessage=e=>{const data=JSON.parse(e.data);if(pending.has(data.id)){pending.get(data.id)(data);pending.delete(data.id);}};
+  ws.onmessage=e=>{const data=JSON.parse(e.data);if(pending.has(data.id)){pending.get(data.id)(data);pending.delete(data.id);}else if(process.env.TV_CONSOLE && data.method==='Runtime.consoleAPICalled') {const text=(data.params.args||[]).filter(a=>typeof a.value==='string').map(a=>a.value).join(' ').replace(/clientcert=[^&\s]+/g,'clientcert=[public certificate]');if(/\bpair\b|Paired host|pair\?|Failed|Certificate mismatch|pairingDialog/i.test(text)) console.log('TV console:',text.slice(0,2000));}};
   const send=(method,params={})=>new Promise((resolve,reject)=>{const id=nextId++;const timer=setTimeout(()=>{pending.delete(id);reject(new Error('Inspector request timed out: '+method));},20000);pending.set(id,result=>{clearTimeout(timer);if(result.error)reject(new Error(result.error.message));else resolve(result.result);});ws.send(JSON.stringify({id,method,params}));});
   try {
+    if(process.env.TV_CONSOLE) await send('Runtime.enable');
     if(process.env.PREVIEW_CONNECTION){
       const config=JSON.parse(fs.readFileSync(process.env.PREVIEW_CONNECTION,'utf8'));
       const value={address:config.Address,token:config.Token,sunshine:new URL(config.Address).hostname};
