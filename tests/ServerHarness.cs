@@ -11,7 +11,8 @@ public static class ServerHarness {
                 if (seen.Add(request)) launches++;
                 return new { launches = launches };
             },
-            (id, kind) => id == Guid.Parse("11111111-1111-4111-8111-111111111111") ? new byte[] { 255,216,255,217 } : null)) {
+            (id, kind) => id == Guid.Parse("11111111-1111-4111-8111-111111111111") ? new byte[] { 255,216,255,217 } : null,
+            () => new { host = "harness", online = true, gameCount = 1, runningGame = (object)null })) {
             server.Start(); Console.WriteLine("READY"); Console.ReadLine();
         }
     }

@@ -43,7 +43,7 @@ namespace Platynite {
                     var backups = JsonConvert.DeserializeObject<Dictionary<Guid, CloudBackup>>(File.ReadAllText(Path.Combine(GetPluginUserDataPath(), "cloud-launch-backup.json")));
                     foreach (var entry in backups) cloudBackups[entry.Key] = entry.Value;
                 } catch { }
-                server = new CompanionServer(settings.Port, settings.Token, Catalog, Launch, Artwork);
+                server = new CompanionServer(settings.Port, settings.Token, Catalog, Launch, Artwork, Status);
                 server.Start();
                 Playnite.SDK.LogManager.GetLogger().Info("Platynite Companion listening on port " + settings.Port);
             } catch (Exception e) { Playnite.SDK.LogManager.GetLogger().Error(e, "Platynite Companion could not start"); }
@@ -70,6 +70,18 @@ namespace Platynite {
         private T UI<T>(Func<T> work) {
             if (Application.Current.Dispatcher.CheckAccess()) return work();
             return Application.Current.Dispatcher.Invoke(work);
+        }
+        private object Status() {
+            return UI<object>(() => {
+                var running = PlayniteApi.Database.Games.FirstOrDefault(g => g.IsRunning || g.IsLaunching);
+                return new {
+                    host = Environment.MachineName,
+                    online = true,
+                    gameCount = PlayniteApi.Database.Games.Count,
+                    runningGame = running == null ? null : new { id = running.Id.ToString(), name = running.Name,
+                        installed = running.IsInstalled, hidden = running.Hidden, cloudProvider = (CloudRouteFor(running) == null ? null : CloudRouteFor(running).Provider) }
+                };
+            });
         }
         private object Catalog() {
             return UI<object>(() => {

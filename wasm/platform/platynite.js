@@ -95,6 +95,7 @@
       status(error.message + (catalog.games.length ? ' Showing your saved library.' : ''));
     });
   }
+  var PAGE = 60, gridShown = PAGE;
   function filtered() {
     var query = el('pn-search').value.toLowerCase(), platform = el('pn-platform').value;
     var result = catalog.games.filter(function(g) {
@@ -109,6 +110,7 @@
     });
     return viewMode === 'home' ? result.slice(0,24) : result;
   }
+  function renderFilters() { gridShown = PAGE; render(); }
   function render() {
     var focusedGame = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.game : null;
     var platform = el('pn-platform'), previous = platform.value, names = {}; gameById = {};
@@ -119,7 +121,7 @@
     visible = filtered(); el('pn-count').textContent = visible.length + ' / ' + catalog.games.length + ' games';
     el('pn-heading').textContent = viewMode === 'home' ? 'StartPage' : viewMode === 'activity' ? 'GameActivity' : 'Games';
     var addonList=el('pn-addons'); addonList.textContent='';
-    (catalog.addons || []).forEach(function(addon) { var button=document.createElement('button');button.className='pn-addon';button.textContent=addon.name;button.dataset.view=addon.view;button.onclick=function(){viewMode=addon.view;render();var first=el('pn-grid').querySelector('button');if(first)first.focus();};addonList.appendChild(button); });
+    (catalog.addons || []).forEach(function(addon) { var button=document.createElement('button');button.className='pn-addon';button.textContent=addon.name;button.dataset.view=addon.view;button.onclick=function(){viewMode=addon.view;renderFilters();var first=el('pn-grid').querySelector('button');if(first)first.focus();};addonList.appendChild(button); });
     el('pn-addon-label').hidden = !(catalog.addons || []).length;
     var hours=catalog.games.reduce(function(total,g){return total+(Number(g.playtime)||0);},0)/3600;
     el('pn-summary').hidden = viewMode === 'library';
@@ -130,7 +132,8 @@
       entries.forEach(function(entry) { if (entry.isIntersecting) { loadCard(entry.target); imageObserver.unobserve(entry.target); } });
     }, { root: grid, rootMargin:'200px' });
     var fragment = document.createDocumentFragment();
-    visible.forEach(function(game, index) {
+    var shown = Math.min(gridShown, visible.length);
+    visible.slice(0, shown).forEach(function(game, index) {
       var card = document.createElement('button'); card.className = 'pn-card'; card.dataset.game = game.id;
       card.setAttribute('aria-label', game.name + (game.installed ? ', installed' : game.cloudProvider ? ', '+game.cloudProvider : ', not installed'));
       card.setAttribute('aria-selected', selected && selected.id === game.id ? 'true':'false');
@@ -146,6 +149,8 @@
       if (imageObserver) imageObserver.observe(card); else if (index < 30) loadCard(card);
     });
     grid.appendChild(fragment);
+    el('pn-more').hidden = shown >= visible.length;
+    el('pn-more').textContent = 'Showing ' + shown + ' of ' + visible.length;
     el('pn-empty').hidden = visible.length > 0;
     el('pn-empty-title').textContent = catalog.games.length ? 'No matching games' : 'Your Playnite library, on your TV';
     el('pn-empty-text').textContent = catalog.games.length ? 'Change your search or filters to see more games.' : 'Connect to Playnite on your PC to see your games, covers, and favorites.';
@@ -245,7 +250,7 @@
       '<div id="pn-layout"><aside id="pn-sidebar"><div class="pn-caption">Library</div><button id="pn-all" class="pn-current">All games</button>' +
       '<label class="pn-filter"><input type="checkbox" id="pn-installed">Installed</label><label class="pn-filter"><input type="checkbox" id="pn-cloud">Cloud games</label><label class="pn-filter"><input type="checkbox" id="pn-favorite">Favorites</label><label class="pn-filter"><input type="checkbox" id="pn-hidden">Show hidden</label>' +
       '<div class="pn-caption" style="margin-top:26px">Platforms</div><select id="pn-platform" aria-label="Filter platform"></select><div id="pn-addon-label" class="pn-caption">Add-ons</div><div id="pn-addons"></div><button id="pn-refresh">↻ Refresh</button><button id="pn-resume">Resume desktop</button></aside>' +
-      '<main id="pn-library"><div id="pn-library-header"><span id="pn-heading">Games</span><span id="pn-count"></span></div><div id="pn-summary" hidden></div><div id="pn-grid" aria-label="Games"></div><div id="pn-empty"><strong id="pn-empty-title"></strong><span id="pn-empty-text"></span></div></main>' +
+      '<main id="pn-library"><div id="pn-library-header"><span id="pn-heading">Games</span><span id="pn-count"></span></div><div id="pn-summary" hidden></div><div id="pn-grid" aria-label="Games"></div><div id="pn-more" class="pn-caption" hidden></div><div id="pn-empty"><strong id="pn-empty-title"></strong><span id="pn-empty-text"></span></div></main>' +
       '<aside id="pn-details"><img id="pn-detail-art" alt="" hidden><h1 id="pn-title">Choose a game</h1><div id="pn-meta"></div><button id="pn-play" class="pn-play" disabled>▶ Play</button><p id="pn-description"></p></aside></div>' +
       '<footer id="pn-status" role="status">Connect Playnite to load your library.</footer>' +
       '<div id="pn-setup" hidden><form id="pn-form"><h2>Connect your Playnite</h2><p>On the PC, open Playnite → Extensions → Platynite → Show TV connection details. Enter the address and token below.</p>' +
@@ -254,11 +259,17 @@
       '<label for="pn-sunshine">Sunshine PC address (optional)</label><input id="pn-sunshine" placeholder="Uses the same PC as Playnite">' +
       '<div class="pn-actions"><button type="submit" id="pn-save">Connect</button><button type="button" id="pn-cancel">Cancel</button></div><div id="pn-error" role="alert"></div></form></div>';
     document.body.appendChild(root);
-    ['installed','favorite','hidden','cloud'].forEach(function(key) { el('pn-' + key).checked = !!preferences[key]; el('pn-' + key).onchange = function() { preferences[key] = this.checked; save('platynite.view.v1', preferences); render(); }; });
+    ['installed','favorite','hidden','cloud'].forEach(function(key) { el('pn-' + key).checked = !!preferences[key]; el('pn-' + key).onchange = function() { preferences[key] = this.checked; save('platynite.view.v1', preferences); renderFilters(); }; });
     el('pn-all').onclick=function(){viewMode='library';render();};
-    el('pn-sort').value = preferences.sort; el('pn-sort').onchange = function() { preferences.sort = this.value; save('platynite.view.v1', preferences); render(); };
+    el('pn-sort').value = preferences.sort; el('pn-sort').onchange = function() { preferences.sort = this.value; save('platynite.view.v1', preferences); renderFilters(); };
     el('pn-view').onclick = function() { preferences.list = !preferences.list; save('platynite.view.v1', preferences); render(); };
-    el('pn-search').oninput = render; el('pn-platform').onchange = render;
+    var searchTimer = null;
+    el('pn-search').oninput = function() { clearTimeout(searchTimer); searchTimer = setTimeout(renderFilters, 250); };
+    el('pn-platform').onchange = renderFilters;
+    el('pn-grid').addEventListener('scroll', function() {
+      if (gridShown >= visible.length) return;
+      if (this.scrollTop + this.clientHeight >= this.scrollHeight - 400) { gridShown += PAGE; render(); }
+    });
     el('pn-connect').onclick = setup; el('pn-cancel').onclick = function() { el('pn-setup').hidden = true; el('pn-connect').focus(); };
     el('pn-refresh').onclick = function() { refresh(false); }; el('pn-play').onclick = function() { connect(false); }; el('pn-resume').onclick = function() { connect(true); };
     el('pn-streaming').onclick = function() { hide(); showHosts(); };
@@ -299,7 +310,7 @@
     var code = event.keyCode, editing = /INPUT|SELECT/.test(document.activeElement.tagName);
     if (code === 10009 || code === 27) {
       event.preventDefault(); event.stopImmediatePropagation();
-      if (!el('pn-setup').hidden) el('pn-cancel').click(); else if (el('pn-search').value) { el('pn-search').value=''; render(); } else el('pn-connect').focus();
+      if (!el('pn-setup').hidden) el('pn-cancel').click(); else if (el('pn-search').value) { el('pn-search').value=''; renderFilters(); } else el('pn-connect').focus();
       return;
     }
     if (editing && ![38,40].includes(code)) { event.stopImmediatePropagation(); return; }
