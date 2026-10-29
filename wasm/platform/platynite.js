@@ -7,6 +7,15 @@
   var root, pending = null, busy = false, stopped = false, refreshTimer, imageObserver, connectionTimer;
   var imageDb, imageRequests = {}, imageQueue = [], activeImages = 0;
   var preferences = read('platynite.view.v1', { installed: false, favorite: false, hidden: false, sort: 'name', list: false });
+  var nativeApps = {};
+  try {
+    if (window.tizen && tizen.application && tizen.application.getAppsInfo) {
+      tizen.application.getAppsInfo().forEach(function(a) {
+        var s = ((a.id || '') + ' ' + (a.name || '')).toLowerCase();
+        if (s.indexOf('xbox') >= 0 && !nativeApps['Xbox Cloud']) nativeApps['Xbox Cloud'] = a.id;
+      });
+    }
+  } catch (_) {}
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (_) { return fallback; } }
   function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {} }
   function el(id) { return document.getElementById(id); }
@@ -111,6 +120,19 @@
     return viewMode === 'home' ? result.slice(0,24) : result;
   }
   function renderFilters() { gridShown = PAGE; render(); }
+  function jumpTo(letter) {
+    if (viewMode !== 'library') { viewMode = 'library'; gridShown = PAGE; render(); }
+    if (!visible.length) return;
+    var i, ch, idx = visible.length - 1;
+    for (i = 0; i < visible.length; i++) {
+      ch = (visible[i].name || '').slice(0, 1).toUpperCase();
+      if (letter === '#') { if (ch >= '0' && ch <= '9') { idx = i; break; } }
+      else if (ch >= letter) { idx = i; break; }
+    }
+    gridShown = Math.max(gridShown, idx + PAGE); render();
+    var card = el('pn-grid').querySelector('[data-game="' + visible[idx].id + '"]');
+    if (card) card.focus();
+  }
   function render() {
     var focusedGame = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.game : null;
     var platform = el('pn-platform'), previous = platform.value, names = {}; gameById = {};
@@ -160,15 +182,42 @@
   }
   function loadCard(card) { var game = gameById[card.dataset.game]; if (game) attachImage(card.querySelector('img'), game, 'cover'); }
   function playable(game) { return game && (game.canPlay === undefined ? game.installed : game.canPlay); }
+  function tvRoute(game) {
+    if (!game || game.installed || game.running) return null;
+    if (game.cloudProvider === 'Xbox Cloud') {
+      if (nativeApps['Xbox Cloud']) return { kind: 'native', label: '▶ Play in Xbox TV app', note: 'Plays in the Xbox app on this TV. Your PC can stay off.' };
+      if (game.cloudUrl) return { kind: 'url', label: '▶ Play on TV', note: 'Plays here on the TV, no PC needed. Back exits to TV home.' };
+    }
+    return null;
+  }
+  function goTv(game, route) {
+    if (route.kind === 'native') {
+      try { tizen.application.launch(nativeApps['Xbox Cloud']); status('Opening the Xbox app on this TV. Pick your game there.'); return; }
+      catch (_) { /* fall through to the browser link */ }
+    }
+    if (game.cloudUrl) { status('Starting on this TV — your PC can stay off.'); window.location.replace(game.cloudUrl); }
+    else status('No TV play link for this game. Use Play via PC instead.');
+  }
   function select(game) {
     selected = game;
     var oldCard=el('pn-grid').querySelector('[aria-selected=true]');if(oldCard)oldCard.setAttribute('aria-selected','false');
     var newCard=game&&el('pn-grid').querySelector('[data-game="'+game.id+'"]');if(newCard)newCard.setAttribute('aria-selected','true');
     el('pn-title').textContent = game ? game.name : 'Choose a game';
-    el('pn-meta').textContent = game ? (game.platforms || []).concat(game.source || [], game.installed ? 'Installed' : game.cloudProvider || 'Not installed').filter(Boolean).join(' · ') : 'Powered by your PC’s Playnite library';
-    el('pn-description').textContent = game ? game.description || 'No description available in Playnite.' : '';
-    el('pn-play').disabled = !playable(game) || !online || busy;
-    el('pn-play').textContent = game && game.running ? '▶ Resume game' : !playable(game) ? 'Not available to play' : game.cloudProvider && !game.installed ? '▶ '+game.cloudProvider : '▶ Play';
+    var route = tvRoute(game);
+    el('pn-meta').textContent = game ? (game.platforms || []).concat(game.source || [], game.installed ? 'Installed' : game.cloudProvider || 'Not installed', route ? route.note : null).filter(Boolean).join(' · ') : 'Powered by your PC’s Playnite library';
+    if (game && game.detail === undefined && online) {
+      game.detail = null;
+      el('pn-description').textContent = 'Loading details…';
+      request('/api/game/' + game.id).then(function(d) {
+        game.detail = d.description || ''; if (!game.cloudUrl) game.cloudUrl = d.cloudUrl;
+        if (selected && selected.id === game.id) select(game);
+      }).catch(function() { if (game.detail === null) game.detail = undefined; });
+    } else {
+      el('pn-description').textContent = game ? game.detail || 'No description available in Playnite.' : '';
+    }
+    el('pn-play').disabled = (!route && !playable(game)) || !online || busy;
+    el('pn-play').textContent = !game ? '▶ Play' : game.running ? '▶ Resume game' : route ? route.label : !playable(game) ? 'Not available to play' : game.cloudProvider && !game.installed ? '▶ '+game.cloudProvider+' (via PC)' : '▶ Play';
+    el('pn-alt').hidden = !route || !online || busy;
     clearTimeout(detailTimer);
     if (game) detailTimer=setTimeout(function() {
       image(game, game.background ? 'background':'cover').then(function(data) {
@@ -250,8 +299,8 @@
       '<div id="pn-layout"><aside id="pn-sidebar"><div class="pn-caption">Library</div><button id="pn-all" class="pn-current">All games</button>' +
       '<label class="pn-filter"><input type="checkbox" id="pn-installed">Installed</label><label class="pn-filter"><input type="checkbox" id="pn-cloud">Cloud games</label><label class="pn-filter"><input type="checkbox" id="pn-favorite">Favorites</label><label class="pn-filter"><input type="checkbox" id="pn-hidden">Show hidden</label>' +
       '<div class="pn-caption" style="margin-top:26px">Platforms</div><select id="pn-platform" aria-label="Filter platform"></select><div id="pn-addon-label" class="pn-caption">Add-ons</div><div id="pn-addons"></div><button id="pn-refresh">↻ Refresh</button><button id="pn-resume">Resume desktop</button></aside>' +
-      '<main id="pn-library"><div id="pn-library-header"><span id="pn-heading">Games</span><span id="pn-count"></span></div><div id="pn-summary" hidden></div><div id="pn-grid" aria-label="Games"></div><div id="pn-more" class="pn-caption" hidden></div><div id="pn-empty"><strong id="pn-empty-title"></strong><span id="pn-empty-text"></span></div></main>' +
-      '<aside id="pn-details"><img id="pn-detail-art" alt="" hidden><h1 id="pn-title">Choose a game</h1><div id="pn-meta"></div><button id="pn-play" class="pn-play" disabled>▶ Play</button><p id="pn-description"></p></aside></div>' +
+      '<main id="pn-library"><div id="pn-library-header"><span id="pn-heading">Games</span><span id="pn-count"></span></div><div id="pn-az" aria-label="Jump to letter"></div><div id="pn-summary" hidden></div><div id="pn-grid" aria-label="Games"></div><div id="pn-more" class="pn-caption" hidden></div><div id="pn-empty"><strong id="pn-empty-title"></strong><span id="pn-empty-text"></span></div></main>' +
+      '<aside id="pn-details"><img id="pn-detail-art" alt="" hidden><h1 id="pn-title">Choose a game</h1><div id="pn-meta"></div><button id="pn-play" class="pn-play" disabled>▶ Play</button><button id="pn-alt" class="pn-alt" hidden>Play via PC instead</button><p id="pn-description"></p></aside></div>' +
       '<footer id="pn-status" role="status">Connect Playnite to load your library.</footer>' +
       '<div id="pn-setup" hidden><form id="pn-form"><h2>Connect your Playnite</h2><p>On the PC, open Playnite → Extensions → Platynite → Show TV connection details. Enter the address and token below.</p>' +
       '<label for="pn-address">Companion address</label><input id="pn-address" placeholder="http://192.168.1.10:19822" required>' +
@@ -271,7 +320,19 @@
       if (this.scrollTop + this.clientHeight >= this.scrollHeight - 400) { gridShown += PAGE; render(); }
     });
     el('pn-connect').onclick = setup; el('pn-cancel').onclick = function() { el('pn-setup').hidden = true; el('pn-connect').focus(); };
-    el('pn-refresh').onclick = function() { refresh(false); }; el('pn-play').onclick = function() { connect(false); }; el('pn-resume').onclick = function() { connect(true); };
+    el('pn-refresh').onclick = function() { refresh(false); };
+    el('pn-play').onclick = function() { var r = tvRoute(selected); if (r) goTv(selected, r); else connect(false); };
+    el('pn-alt').onclick = function() { connect(false); };
+    el('pn-resume').onclick = function() { connect(true); };
+    (function buildAz() {
+      var az = el('pn-az'), letters = '#ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), i, b;
+      for (i = 0; i < letters.length; i++) {
+        b = document.createElement('button'); b.className = 'pn-azbtn'; b.textContent = letters[i];
+        b.setAttribute('aria-label', letters[i] === '#' ? 'Jump to numbers' : 'Jump to ' + letters[i]);
+        (function(letter) { b.onclick = function() { jumpTo(letter); }; })(letters[i]);
+        az.appendChild(b);
+      }
+    })();
     el('pn-streaming').onclick = function() { hide(); showHosts(); };
     el('pn-form').onsubmit = function(event) {
       event.preventDefault();

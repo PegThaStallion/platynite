@@ -18,6 +18,9 @@ try:
     assert request('/api/artwork/../../connection.json')[0]==400
     assert request('/api/artwork/11111111-1111-4111-8111-111111111111/cover')[2]['Content-Type']=='image/jpeg'
     assert request('/api/artwork/22222222-2222-4222-8222-222222222222/cover')[0]==404
+    status,body,_=request('/api/game/11111111-1111-4111-8111-111111111111');assert status==200 and json.loads(body)['description']=='harness game'
+    assert request('/api/game/22222222-2222-4222-8222-222222222222')[0]==404
+    assert request('/api/game/not-a-uuid')[0]==400
     assert request('/api/launch','POST',{'id':'invalid','requestId':'invalid'})[0]==400
     request_id='55555555-5555-4555-8555-555555555555'
     payload={'id':'11111111-1111-4111-8111-111111111111','requestId':request_id}
@@ -25,6 +28,6 @@ try:
         status,body,_=request('/api/launch','POST',payload);assert status==200 and json.loads(body)['launches']==1
     payload['id']='22222222-2222-4222-8222-222222222222'
     assert request('/api/launch','POST',payload)[0]==409
-    print('PASS: authentication, CORS preflight, catalog, artwork, bounded routing, invalid IDs, unavailable games, duplicate launch requests')
+    print('PASS: authentication, CORS preflight, catalog, game detail, artwork, bounded routing, invalid IDs, unavailable games, duplicate launch requests')
 finally:
     process.communicate('\n',timeout=5)

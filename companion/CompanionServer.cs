@@ -15,15 +15,16 @@ namespace Platynite {
         private readonly TcpListener listener;
         private readonly string token;
         private readonly Func<object> catalog;
+        private readonly Func<Guid, object> detail;
         private readonly Func<Guid, Guid, object> launch;
         private readonly Func<Guid, string, byte[]> artwork;
         private readonly Func<object> status;
         private readonly SemaphoreSlim slots = new SemaphoreSlim(12);
         private volatile bool stopping;
 
-        public CompanionServer(int port, string token, Func<object> catalog,
+        public CompanionServer(int port, string token, Func<object> catalog, Func<Guid, object> detail,
             Func<Guid, Guid, object> launch, Func<Guid, string, byte[]> artwork, Func<object> status) {
-            this.token = token; this.catalog = catalog; this.launch = launch; this.artwork = artwork; this.status = status;
+            this.token = token; this.catalog = catalog; this.detail = detail; this.launch = launch; this.artwork = artwork; this.status = status;
             listener = new TcpListener(IPAddress.Any, port);
         }
 
@@ -79,6 +80,11 @@ namespace Platynite {
                     bool keepAlive = !headers.ContainsKey("Connection") || !string.Equals(headers["Connection"], "close", StringComparison.OrdinalIgnoreCase);
                     if (first[0] == "GET" && path == "/api/catalog") { Reply(stream, 200, catalog(), keepAlive); continue; }
                     if (first[0] == "GET" && path == "/api/status") { Reply(stream, 200, status(), keepAlive); continue; }
+                    if (first[0] == "GET" && path.StartsWith("/api/game/")) {
+                        var gparts = path.Split('/'); Guid gid;
+                        if (gparts.Length != 4 || !Guid.TryParse(gparts[3], out gid)) { Reply(stream, 400, new { error = "Game id must be a UUID" }, true); break; }
+                        Reply(stream, 200, detail(gid), keepAlive); continue;
+                    }
                     if (first[0] == "GET" && path.StartsWith("/api/artwork/")) {
                         var parts = path.Split('/'); Guid id;
                         if (parts.Length != 5 || !Guid.TryParse(parts[3], out id) || (parts[4] != "cover" && parts[4] != "background")) {

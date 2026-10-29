@@ -6,6 +6,7 @@ public static class ServerHarness {
         var seen = new HashSet<Guid>(); int launches = 0;
         using (var server = new CompanionServer(int.Parse(args[0]), "test-companion-token",
             () => new { version = 1, games = new[] { new { id = "11111111-1111-4111-8111-111111111111", installed = true } } },
+            (id) => { if (id == Guid.Parse("11111111-1111-4111-8111-111111111111")) return new { id = "11111111-1111-4111-8111-111111111111", description = "harness game" }; throw new ApiException(404, "Game not found"); },
             (id, request) => {
                 if (id != Guid.Parse("11111111-1111-4111-8111-111111111111")) throw new ApiException(409,"Game is not installed");
                 if (seen.Add(request)) launches++;
